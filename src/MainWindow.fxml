@@ -5,15 +5,27 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
+<AnchorPane prefHeight="400" prefWidth="600"
+            xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="HostingButtons">
 
-<AnchorPane prefHeight="400" prefWidth="600" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25">
-   <children>
-      <Button layoutX="56.0" layoutY="172.0" mnemonicParsing="false" prefHeight="57.0" prefWidth="282.0" text="Host Game" />
-      <Button layoutX="56.0" layoutY="243.0" mnemonicParsing="false" prefHeight="57.0" prefWidth="282.0" text="Join Game" />
-      <TextArea editable="false" layoutX="56.0" layoutY="26.0" prefHeight="117.0" prefWidth="407.0" text="Poker">
-         <font>
-            <Font name="Carlito" size="40.0" />
-         </font>
-      </TextArea>
-   </children>
+    <children>
+        <TextArea editable="false" layoutX="56.0" layoutY="26.0"
+                  prefHeight="117.0" prefWidth="407.0" text="Poker">
+            <font>
+                <Font name="Carlito" size="40.0" />
+            </font>
+        </TextArea>
+
+        <Button layoutX="56.0" layoutY="172.0" mnemonicParsing="false"
+                prefHeight="57.0" prefWidth="282.0"
+                text="Host Game"
+                onAction="#handleHostGame" />
+
+        <Button layoutX="56.0" layoutY="243.0" mnemonicParsing="false"
+                prefHeight="57.0" prefWidth="282.0"
+                text="Join Game"
+                onAction="#handleJoinGame" />
+    </children>
 </AnchorPane>

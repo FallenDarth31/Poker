@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="HostingController">
+
+    <Label layoutX="336.0" layoutY="14.0" style="-fx-font-size: 24px; -fx-font-weight: bold;" text="Hosting" />
+   <TextArea editable="false" layoutX="101.0" layoutY="100.0" prefHeight="200.0" prefWidth="200.0" />
+   <Button layoutX="515.0" layoutY="100.0" mnemonicParsing="false" onAction="#Host" prefHeight="66.0" prefWidth="235.0" text="Begin Hosting">
+      <font>
+         <Font size="25.0" />
+      </font>
+   </Button>
+
+</AnchorPane>
