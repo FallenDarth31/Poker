@@ -7,6 +7,8 @@ import javafx.stage.Stage;
 
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class Main extends Application {
     @Override
@@ -19,7 +21,8 @@ public class Main extends Application {
         primaryStage.show();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException {
+
         launch(args);
     }
      public static void Hosting() throws IOException {

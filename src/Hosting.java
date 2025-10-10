@@ -8,6 +8,12 @@ import javafx.scene.control.TextArea;
 public class Hosting {
     public List<String> Players = Collections.synchronizedList(new ArrayList<>());
 
+
+    public void setPlayersList(List<String> players) {
+        this.Players = players;
+    }
+
+
     public void Start() throws IOException {
         new Thread(() -> {
             try (ServerSocket serverSocket = new ServerSocket(9000)) {
@@ -19,6 +25,7 @@ public class Hosting {
 
                     ClientHandler clientHandler = new ClientHandler(clientSocket);
                     new Thread(clientHandler).start();
+                    Players.add(clientSocket.getInetAddress().getHostAddress());
                 }
 
             } catch (IOException e) {

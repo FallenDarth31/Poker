@@ -13,10 +13,18 @@ public class Card{
 
     }
 
-    void SetSuit(int SuitSet) {
+    public void SetSuit(int SuitSet) {
         this.suit = Suit.values()[SuitSet];
     }
-    void SetValue(int Value) {
+    public void SetValue(int Value) {
         this.value = Value;
+    }
+
+    public Suit getSuit() {
+        return this.suit;
+    }
+
+    public int getValue() {
+        return this.value;
     }
 }
