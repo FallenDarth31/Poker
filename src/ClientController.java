@@ -4,8 +4,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
 
 import java.awt.*;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.io.IOException;
+import java.net.*;
 
 public class ClientController {
 
@@ -63,6 +63,26 @@ public class ClientController {
             from = dotIndex + 1;
         }
         return ip.substring(0, dotIndex);
+    }
+
+    @FXML
+    public void Connect() throws IOException {
+        String ServerIP = serverList.getValue().toString();
+
+        if (ServerIP != null) {
+            try {
+                Socket socket = new Socket();
+                SocketAddress address = new InetSocketAddress(ServerIP, 9000);
+
+                socket.connect(address, 100);
+
+                System.out.println("Connected to " + ServerIP);
+            } catch (Exception e) {
+
+            }
+
+        }
+
     }
 
 
