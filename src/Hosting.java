@@ -7,6 +7,7 @@ import javafx.scene.control.TextArea;
 
 public class Hosting {
     public List<String> Players = Collections.synchronizedList(new ArrayList<>());
+    public List<String> Usernames = Collections.synchronizedList(new ArrayList<>());
 
 
     public void setPlayersList(List<String> players) {
@@ -35,6 +36,7 @@ public class Hosting {
     }
 
     class ClientHandler implements Runnable {
+        Boolean firstMessage = true;
         private final Socket clientSocket;
 
         public ClientHandler(Socket socket) {
@@ -49,7 +51,11 @@ public class Hosting {
                 String message;
                 while ((message = in.readLine()) != null) {
                     System.out.println("Client says: " + message);
-                    out.println("Message received: " + message);
+                    if (firstMessage == true) {
+                        Usernames.add(message);
+                        firstMessage = false;
+                    }
+                    //out.println("Message received: " + message);
                 }
 
             } catch (IOException e) {

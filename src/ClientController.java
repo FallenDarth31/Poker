@@ -4,7 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.MenuItem;
 
 import java.awt.*;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 
 public class ClientController {
@@ -12,6 +12,8 @@ public class ClientController {
     public javafx.scene.control.TextField IPIn;
     public javafx.scene.control.TextArea DeviceIPArea;
     public javafx.scene.control.ComboBox serverList;
+    @FXML
+    public javafx.scene.control.TextField UsernameIN;
 
 
     String IP = "192.168.0";
@@ -70,16 +72,33 @@ public class ClientController {
         String ServerIP = serverList.getValue().toString();
 
         if (ServerIP != null) {
-            try {
-                Socket socket = new Socket();
-                SocketAddress address = new InetSocketAddress(ServerIP, 9000);
+            if (!UsernameIN.getText().equals("") && !UsernameIN.getText().equals("Enter the username:")) {
+                String Username = UsernameIN.getText();
+                try {
+                    Socket socket = new Socket();
+                    SocketAddress address = new InetSocketAddress(ServerIP, 9000);
 
-                socket.connect(address, 100);
+                    socket.connect(address, 100);
 
-                System.out.println("Connected to " + ServerIP);
-            } catch (Exception e) {
+                    System.out.println("Connected to " + ServerIP);
+
+
+                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+                    out.println(Username);
+
+
+
+                } catch (Exception e) {
+
+                }
+            } else {
+                UsernameIN.setPromptText("**Enter a username**");
 
             }
+
+        } else {
 
         }
 

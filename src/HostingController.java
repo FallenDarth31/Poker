@@ -11,6 +11,10 @@ import java.util.List;
 
 public class HostingController {
 
+    Hosting H = new Hosting();
+
+    @FXML
+    private TextArea UsernameList;
     @FXML
     private TextArea ServerIP;
     @FXML
@@ -34,12 +38,12 @@ public class HostingController {
     @FXML
     private void Host() throws IOException {
         System.out.println("Host Game clicked!");
-        Hosting H = new Hosting();
         H.setPlayersList(Players);
         H.Start();
         System.out.println("Working");
 
         Players = H.Players;
+
 
 
 
