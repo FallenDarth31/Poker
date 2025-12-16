@@ -1,7 +1,11 @@
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.MenuItem;
+import javafx.stage.Stage;
 
 import java.awt.*;
 import java.io.*;
@@ -14,6 +18,10 @@ public class ClientController {
     public javafx.scene.control.ComboBox serverList;
     @FXML
     public javafx.scene.control.TextField UsernameIN;
+
+    private Socket currentSocket;
+    private PrintWriter currentOut;
+    private BufferedReader currentIn;
 
 
     String IP = "192.168.0";
@@ -67,6 +75,7 @@ public class ClientController {
         return ip.substring(0, dotIndex);
     }
 
+
     @FXML
     public void Connect() throws IOException {
         String ServerIP = serverList.getValue().toString();
@@ -75,34 +84,43 @@ public class ClientController {
             if (!UsernameIN.getText().equals("") && !UsernameIN.getText().equals("Enter the username:")) {
                 String Username = UsernameIN.getText();
                 try {
-                    Socket socket = new Socket();
+                    currentSocket = new Socket();
                     SocketAddress address = new InetSocketAddress(ServerIP, 9000);
 
-                    socket.connect(address, 100);
+                    currentSocket.connect(address, 100);
 
                     System.out.println("Connected to " + ServerIP);
 
+                    currentOut = new PrintWriter(currentSocket.getOutputStream(), true);
+                    currentIn = new BufferedReader(new InputStreamReader(currentSocket.getInputStream()));
 
-                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    currentOut.println(Username);
 
-                    out.println(Username);
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("LobbyWindow.fxml"));
+                    Parent root = loader.load();
 
+                    Stage Lobby = new Stage();
+                    Lobby.setTitle("Lobby");
+                    Lobby.setScene(new Scene(root, 800, 600));
+                    Lobby.setWidth(800);
+                    Lobby.setHeight(600);
+
+                    LobbyController lobbyController = loader.getController();
+                    lobbyController.PassVariables(currentSocket, Username);
+
+                    Lobby.show();
 
 
                 } catch (Exception e) {
-
+                    e.printStackTrace();
                 }
             } else {
                 UsernameIN.setPromptText("**Enter a username**");
-
             }
 
         } else {
-
+            // Handle no server selected
         }
-
     }
-
 
 }
