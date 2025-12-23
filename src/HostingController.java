@@ -20,11 +20,17 @@ public class HostingController {
     private TextArea ServerIP;
     @FXML
     private Button ConnectButton;
+
+    Boolean hostingstarted = false;
+
+    private GameState gameState;
+
+    String IP;
     
     public List<String> Players = Collections.synchronizedList(new ArrayList<>());
 
     @FXML
-    public void initialize() {
+    public void initialize() throws UnknownHostException {
 
         new Thread(()-> {
             System.out.println("Working");
@@ -50,6 +56,12 @@ public class HostingController {
             }
 
         }).start();
+
+        InetAddress myIP = InetAddress.getLocalHost();
+        IP = myIP.getHostAddress();
+        ServerIP.setText(IP);
+
+
     }
 
 
@@ -61,14 +73,24 @@ public class HostingController {
         System.out.println("Working");
 
         Players = H.Players;
+
+        hostingstarted = true;
     }
 
     @FXML
     private void StartGame() {
-        try {
-            H.broadcastMessage("StartingGame");
-        } catch (Exception e) {
-            System.out.println("Broadcast Error (1)");
+
+        if (hostingstarted) {
+            try {
+                gameState = new GameState(H.Usernames, 1000, 50);
+                H.setGameState(gameState);
+                H.broadcastMessage("StartingGame");
+
+            } catch (Exception e) {
+                System.out.println("Broadcast Error (1)");
+            }
+        } else {
+            System.out.println("Debug: Not Hosting");
         }
 
     }

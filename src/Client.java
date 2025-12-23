@@ -11,7 +11,7 @@ public class Client {
         for (int i = 1; i < 255; i++) {
             try (Socket socket = new Socket() ) {
                 String TestIP = IP + "."+ Integer.toString(i);
-                socket.connect(new InetSocketAddress(TestIP, 9000), 50);
+                socket.connect(new InetSocketAddress(TestIP, 9000), 10);
                 System.out.println("Working " + TestIP);
                 Servers.add(TestIP);
 

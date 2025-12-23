@@ -1,30 +1,116 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
 
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientController">
-   <children>
-       <TextField fx:id="IPIn" layoutX="44.0" layoutY="390.0" />
-      <TextArea editable="false" layoutX="44.0" layoutY="299.0" prefHeight="81.0" prefWidth="333.0" text="If the first 3 numbers are not the same as your server IP then set your own here" wrapText="true" />
-      <Button layoutX="211.0" layoutY="390.0" mnemonicParsing="false" onAction="#getIP" prefWidth="151.0" text="Set IP" />
-      <Button layoutX="551.0" layoutY="232.0" mnemonicParsing="false" onAction="#TestConnection" prefHeight="184.0" prefWidth="206.0" text="Scan for Games" />
-      <TextArea fx:id="DeviceIPArea" editable="false" layoutX="45.0" layoutY="232.0" prefHeight="38.0" prefWidth="333.0" text="Device IP: ">
-         <font>
-            <Font size="20.0" />
-         </font>
-      </TextArea>
-      <ComboBox fx:id="serverList" layoutX="44.0" layoutY="501.0" prefHeight="26.0" prefWidth="243.0" />
-      <TextField editable="false" layoutX="44.0" layoutY="467.0" prefHeight="26.0" prefWidth="243.0" text="Select an IP" />
-      <Button layoutX="551.0" layoutY="467.0" mnemonicParsing="false" onAction="#Connect" prefHeight="81.0" prefWidth="206.0" text="Connect to Server"/>
-      <TextField fx:id="UsernameIN" layoutX="44.0" layoutY="70.0" prefHeight="88.0" prefWidth="371.0" promptText="Enter Username:">
-         <font>
-            <Font size="18.0" />
-         </font>
-      </TextField>
-   </children>
+<AnchorPane prefHeight="700.0" prefWidth="1000.0" style="-fx-background-color: linear-gradient(to bottom, #1a1a2e, #16213e);" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientController">
+    <children>
+        <VBox spacing="30.0" AnchorPane.bottomAnchor="40.0" AnchorPane.leftAnchor="40.0" AnchorPane.rightAnchor="40.0" AnchorPane.topAnchor="40.0">
+            <children>
+                <!-- Title -->
+                <Text fill="#00d9ff" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Join Game" textAlignment="CENTER" wrappingWidth="720.0">
+                    <font>
+                        <Font name="System Bold" size="48.0" />
+                    </font>
+                </Text>
+
+                <!-- Two Column Layout -->
+                <HBox spacing="30.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <!-- Left Column -->
+                        <VBox spacing="20.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <!-- Username Section -->
+                                <VBox spacing="12.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 20;">
+                                    <children>
+                                        <Label text="Username" textFill="#00d9ff">
+                                            <font>
+                                                <Font name="System Bold" size="18.0" />
+                                            </font>
+                                        </Label>
+                                        <TextField fx:id="UsernameIN" prefHeight="45.0" promptText="Enter Username:" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-text-fill: white; -fx-prompt-text-fill: #888888; -fx-background-radius: 10; -fx-border-color: #00d9ff; -fx-border-radius: 10; -fx-border-width: 2; -fx-font-size: 16px;" />
+                                    </children>
+                                </VBox>
+
+                                <!-- Device IP Display -->
+                                <VBox spacing="12.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 20;">
+                                    <children>
+                                        <Label text="Your Device" textFill="#00d9ff">
+                                            <font>
+                                                <Font name="System Bold" size="18.0" />
+                                            </font>
+                                        </Label>
+                                        <TextArea fx:id="DeviceIPArea" editable="false" prefHeight="45.0" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-text-fill: white; -fx-background-radius: 10; -fx-border-color: #00d9ff; -fx-border-radius: 10; -fx-border-width: 2; -fx-control-inner-background: rgba(0, 0, 0, 0.3);" text="Device IP: " wrapText="true">
+                                            <font>
+                                                <Font size="16.0" />
+                                            </font>
+                                        </TextArea>
+                                    </children>
+                                </VBox>
+
+                                <!-- Custom IP Section -->
+                                <VBox spacing="12.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 20;">
+                                    <children>
+                                        <Label text="Custom IP Range" textFill="#00d9ff">
+                                            <font>
+                                                <Font name="System Bold" size="18.0" />
+                                            </font>
+                                        </Label>
+                                        <Label text="If your server has a different IP range, enter the first 3 numbers" textFill="#cccccc" wrapText="true">
+                                            <font>
+                                                <Font size="13.0" />
+                                            </font>
+                                        </Label>
+                                        <TextField fx:id="IPIn" prefHeight="40.0" promptText="e.g., 192.168.1" style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-text-fill: white; -fx-prompt-text-fill: #888888; -fx-background-radius: 10; -fx-border-color: #00d9ff; -fx-border-radius: 10; -fx-border-width: 2; -fx-font-size: 15px;" />
+                                        <Button mnemonicParsing="false" onAction="#getIP" prefHeight="40.0" style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 15px;" text="Set IP" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+
+                        <!-- Right Column -->
+                        <VBox alignment="CENTER" spacing="25.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <!-- Scan for Games -->
+                                <VBox alignment="CENTER" spacing="15.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 25;" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Find Games" textFill="#00d9ff">
+                                            <font>
+                                                <Font name="System Bold" size="20.0" />
+                                            </font>
+                                        </Label>
+                                        <Button mnemonicParsing="false" onAction="#TestConnection" prefHeight="80.0" prefWidth="250.0" style="-fx-background-color: #00d9ff; -fx-text-fill: #1a1a2e; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 20px;" text="Scan for Games" />
+                                    </children>
+                                </VBox>
+
+                                <!-- Server Selection -->
+                                <VBox spacing="12.0" style="-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 15; -fx-padding: 20;">
+                                    <children>
+                                        <Label text="Select Server" textFill="#00d9ff">
+                                            <font>
+                                                <Font name="System Bold" size="18.0" />
+                                            </font>
+                                        </Label>
+                                        <ComboBox fx:id="serverList" prefHeight="40.0" promptText="Choose a server..." style="-fx-background-color: rgba(0, 0, 0, 0.3); -fx-background-radius: 10; -fx-border-color: #00d9ff; -fx-border-radius: 10; -fx-border-width: 2;" maxWidth="Infinity" />
+                                    </children>
+                                </VBox>
+
+                                <!-- Connect Button -->
+                                <Button mnemonicParsing="false" onAction="#Connect" prefHeight="70.0" prefWidth="250.0" style="-fx-background-color: #00ff88; -fx-text-fill: #1a1a2e; -fx-background-radius: 10; -fx-font-weight: bold; -fx-font-size: 22px;" text="Connect to Server" />
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
 </AnchorPane>

@@ -10,6 +10,8 @@ public class Hosting {
     public List<String> Usernames = Collections.synchronizedList(new ArrayList<>());
     public List<PrintWriter> Writers = Collections.synchronizedList(new ArrayList<>());
 
+    private GameState gameState;
+
 
     public void setPlayersList(List<String> players) {
         this.Players = players;
@@ -92,6 +94,9 @@ public class Hosting {
                 }
             }
         }
+    }
+    public void setGameState(GameState gs) {
+        this.gameState = gs;
     }
 
 

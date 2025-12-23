@@ -14,6 +14,7 @@ import java.net.*;
 public class ClientController {
 
     public javafx.scene.control.TextField IPIn;
+    @FXML
     public javafx.scene.control.TextArea DeviceIPArea;
     public javafx.scene.control.ComboBox serverList;
     @FXML
@@ -99,17 +100,29 @@ public class ClientController {
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("LobbyWindow.fxml"));
                     Parent root = loader.load();
 
+                    Stage currentStage = (Stage) UsernameIN.getScene().getWindow();
+                    double x = currentStage.getX();
+                    double y = currentStage.getY();
+
                     Stage Lobby = new Stage();
                     Lobby.setTitle("Lobby");
-                    Lobby.setScene(new Scene(root, 800, 600));
-                    Lobby.setWidth(800);
-                    Lobby.setHeight(600);
+                    Lobby.setScene(new Scene(root, 1000, 700));
+                    Lobby.setWidth(1000);
+                    Lobby.setHeight(700);
+                    Lobby.setMinWidth(1000);
+                    Lobby.setMinHeight(700);
 
                     LobbyController lobbyController = loader.getController();
                     lobbyController.PassVariables(currentSocket, Username);
 
+                    Lobby.setX(x);
+                    Lobby.setY(y);
+                    Lobby.toFront();
+                    Lobby.requestFocus();
+
                     Lobby.show();
 
+                    currentStage.close();
 
                 } catch (Exception e) {
                     e.printStackTrace();

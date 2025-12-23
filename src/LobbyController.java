@@ -45,7 +45,7 @@ public class LobbyController {
                 }
                 System.out.println("Server says: " + message);
                 if (message.equals("StartingGame")) {
-
+                    System.out.println("Starting Game!!!");
 
                 }
             }

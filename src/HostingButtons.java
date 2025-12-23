@@ -13,11 +13,11 @@ public class HostingButtons {
         Stage primaryStage = new Stage();
         Parent root = FXMLLoader.load(getClass().getResource("HostingWindow.fxml"));
 
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1000, 700);
         primaryStage.setScene(scene);
         primaryStage.show();
-        primaryStage.setMinWidth(800);
-        primaryStage.setMinHeight(600);
+        primaryStage.setMinWidth(1000);
+        primaryStage.setMinHeight(700);
 
     }
 
@@ -27,13 +27,13 @@ public class HostingButtons {
         primaryStage.setTitle("Join Game");
 
         Parent root = FXMLLoader.load(getClass().getResource("ClientWindow.fxml"));
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root, 1000, 700);
 
         primaryStage.setScene(scene);
-        primaryStage.setWidth(800);
-        primaryStage.setHeight(600);
+        primaryStage.setWidth(1000);
+        primaryStage.setHeight(700);
         primaryStage.show();
-        primaryStage.setMinWidth(800);
-        primaryStage.setMinHeight(600);
+        primaryStage.setMinWidth(1000);
+        primaryStage.setMinHeight(700);
     }
 }
