@@ -77,7 +77,10 @@ public class Hosting {
                         Usernames.add(message);
                         firstMessage = false;
                     }
-                    //out.println("Message received: " + message);
+                    else {
+                    // Handle game actions
+                    handleGameAction(message);
+                    }
                 }
 
             } catch (IOException e) {
@@ -97,6 +100,109 @@ public class Hosting {
     }
     public void setGameState(GameState gs) {
         this.gameState = gs;
+    }
+
+    public void sendToPlayer(String playerName, String message) {
+        synchronized (Usernames) {
+            int index = Usernames.indexOf(playerName);
+            if (index != -1 && index < Writers.size()) {
+                Writers.get(index).println(message);
+                System.out.println("Sent to " + playerName + ": " + message);
+            }
+        }
+    }
+
+    // Deal private cards to all players
+    public void dealCardsToPlayers() {
+        for (String username : Usernames) {
+            Player player = gameState.getPlayerByName(username);
+            if (player != null && player.Hand != null && player.Hand[0] != null && player.Hand[1] != null) {
+                Card card1 = player.Hand[0];
+                Card card2 = player.Hand[1];
+
+                String cardMessage = "DEAL|" +
+                        card1.getSuit() + "|" + card1.getValue() + "|" +
+                        card2.getSuit() + "|" + card2.getValue();
+
+                sendToPlayer(username, cardMessage);
+            }
+        }
+    }
+
+    // Broadcast current game state to all players
+    public void broadcastGameState() {
+        if (gameState == null) return;
+
+        broadcastMessage("POT|" + gameState.getPot());
+        broadcastMessage("CURRENT_BET|" + gameState.getCurrentBet());
+        broadcastMessage("TURN|" + gameState.getCurrentPlayerName());
+        broadcastMessage("PHASE|" + gameState.getCurrentPhase());
+
+        // Send community cards if any are revealed
+        if (gameState.getCommunityCardCount() > 0) {
+            StringBuilder cards = new StringBuilder("COMMUNITY");
+            for (int i = 0; i < gameState.getCommunityCardCount(); i++) {
+                Card card = gameState.getCommunityCards()[i];
+                cards.append("|").append(card.getSuit()).append(",").append(card.getValue());
+            }
+            broadcastMessage(cards.toString());
+        }
+
+        // Broadcast all player chip counts
+        for (Player player : gameState.getPlayers()) {
+            broadcastMessage("PLAYER_CHIPS|" + player.Name + "|" + player.chips);
+        }
+    }
+
+    // Handle game action messages from clients
+    private void handleGameAction(String message) {
+        if (gameState == null) return;
+
+        String[] parts = message.split("\\|");
+        if (parts.length < 2) return;
+
+        String action = parts[0];
+        String playerName = parts[1];
+
+        switch (action) {
+            case "FOLD":
+                gameState.playerFold(playerName);
+                broadcastMessage("ACTION|" + playerName + "|FOLD");
+                broadcastGameState();
+                break;
+
+            case "CHECK":
+                boolean checkSuccess = gameState.playerCheck(playerName);
+                if (checkSuccess) {
+                    broadcastMessage("ACTION|" + playerName + "|CHECK");
+                    broadcastGameState();
+                } else {
+                    sendToPlayer(playerName, "ERROR|Cannot check");
+                }
+                break;
+
+            case "CALL":
+                boolean callSuccess = gameState.playerCall(playerName);
+                if (callSuccess) {
+                    broadcastMessage("ACTION|" + playerName + "|CALL");
+                    broadcastGameState();
+                } else {
+                    sendToPlayer(playerName, "ERROR|Cannot call");
+                }
+                break;
+
+            case "RAISE":
+                if (parts.length < 3) break;
+                int raiseAmount = Integer.parseInt(parts[2]);
+                boolean raiseSuccess = gameState.playerRaise(playerName, raiseAmount);
+                if (raiseSuccess) {
+                    broadcastMessage("ACTION|" + playerName + "|RAISE|" + raiseAmount);
+                    broadcastGameState();
+                } else {
+                    sendToPlayer(playerName, "ERROR|Cannot raise");
+                }
+                break;
+        }
     }
 
 

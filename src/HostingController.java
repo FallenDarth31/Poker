@@ -84,7 +84,14 @@ public class HostingController {
             try {
                 gameState = new GameState(H.Usernames, 1000, 50);
                 H.setGameState(gameState);
+
+                gameState.startNewHand();
+
                 H.broadcastMessage("StartingGame");
+
+                H.dealCardsToPlayers();
+
+                H.broadcastGameState();
 
             } catch (Exception e) {
                 System.out.println("Broadcast Error (1)");

@@ -23,8 +23,8 @@ public class Deck {
     public Card dealCard() {
         if (cards.isEmpty()) {
             return null;
+
         }
         return cards.remove(0); // Removes and returns first card
     }
-
 }

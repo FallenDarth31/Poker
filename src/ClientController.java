@@ -113,7 +113,7 @@ public class ClientController {
                     Lobby.setMinHeight(700);
 
                     LobbyController lobbyController = loader.getController();
-                    lobbyController.PassVariables(currentSocket, Username);
+                    lobbyController.PassVariables(currentSocket, Username, Lobby);
 
                     Lobby.setX(x);
                     Lobby.setY(y);

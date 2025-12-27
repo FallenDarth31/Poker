@@ -123,7 +123,7 @@ public class GameState {
         checkIfHandOver();
     }
 
-    private Player getPlayerByName(String name) {
+    public Player getPlayerByName(String name) {
         for (Player player : players) {
             if (player.Name.equals(name)) {
                 return player;
@@ -140,15 +140,21 @@ public class GameState {
 
     private void checkIfHandOver() {
         int activePlayers = 0;
+        Player lastPlayer = null;
+
         for (Player player : players) {
             if (!player.hasFolded) {
                 activePlayers++;
+                lastPlayer = player;
             }
         }
 
         if (activePlayers == 1) {
-            // Hand is over, award pot to last player
-
+            // Award pot to last remaining player
+            lastPlayer.chips += pot;
+            pot = 0;
+            gamePhase = GamePhase.SHOWDOWN;
+            // Game will start new hand when ready
         }
     }
 
@@ -222,6 +228,7 @@ public class GameState {
             case RIVER:
                 // Betting done, go to showdown
                 gamePhase = GamePhase.SHOWDOWN;
+                determineWinner();
                 break;
 
             case SHOWDOWN:
@@ -255,5 +262,153 @@ public class GameState {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
     }
+
+    public boolean playerCall(String playerName) {
+        Player player = getPlayerByName(playerName);
+
+        if (player == null || player.hasFolded) {
+            return false;
+        }
+
+        // Calculate how much more they need to put in
+        int amountToCall = currentBet - player.currentBet;
+
+        if (amountToCall <= 0) {
+            return false;
+        }
+
+        // Check if player has enough chips
+        if (amountToCall >= player.chips) {
+            // Not enough to call - go all-in with what they have
+            int allInAmount = player.chips;
+            pot += allInAmount;
+            player.currentBet += allInAmount;
+            player.chips = 0;
+            player.isAllIn = true;
+        } else {
+            // Normal call - player has enough chips
+            player.chips -= amountToCall;
+            player.currentBet = currentBet;
+            pot += amountToCall;
+        }
+
+        advanceToNextPlayer();
+
+        // Check if betting round is complete
+        if (isBettingRoundComplete()) {
+            advancePhase();
+        }
+
+        return true;
+    }
+
+    public boolean playerRaise(String playerName, int raiseAmount) {
+        Player player = getPlayerByName(playerName);
+
+        if (player == null || player.hasFolded) {
+            return false; // Invalid
+        }
+
+        // Calculate the total amount needed (call current bet + raise)
+        int amountToCall = currentBet - player.currentBet;
+        int totalAmount = amountToCall + raiseAmount;
+
+        int minimumRaise = bigBlind;
+        if (raiseAmount < minimumRaise) {
+            return false;
+        }
+
+        // Check if player has enough chips
+        if (totalAmount > player.chips) {
+            // Not enough for full raise - go all-in instead
+            int allInAmount = player.chips;
+            pot += allInAmount;
+            player.currentBet += allInAmount;
+            player.chips = 0;
+            player.isAllIn = true;
+
+            if (player.currentBet > currentBet) {
+                currentBet = player.currentBet;
+            }
+        } else {
+            // Normal raise
+            player.chips -= totalAmount;
+            player.currentBet += totalAmount;
+            pot += totalAmount;
+            currentBet = player.currentBet;
+        }
+
+        advanceToNextPlayer();
+
+        return true;
+    }
+
+
+    public String determineWinner() {
+        RankHands bestHand = null;
+        Player winner = null;
+
+        // Evaluate each player's hand
+        for (Player player : players) {
+            if (player.hasFolded) {
+                continue; // Skip folded players
+            }
+
+            // Evaluate this player's hand
+            RankHands playerHand = HandEvaluator.evaluateHand(player.Hand, communityCards);
+
+            // Compare to current best
+            if (bestHand == null || playerHand.compareTo(bestHand) < 0) {
+                bestHand = playerHand;
+                winner = player;
+            }
+        }
+
+        // Award pot to winner
+        if (winner != null) {
+            winner.chips += pot;
+            pot = 0;
+        }
+
+        return winner != null ? winner.Name : null;
+    }
+
+
+
+    //Getter methods
+
+    // Getters so Hosting can read and broadcast game state
+    public int getPot() {
+        return pot;
+    }
+
+    public int getCurrentBet() {
+        return currentBet;
+    }
+
+    public GamePhase getCurrentPhase() {
+        return gamePhase;
+    }
+
+    public String getCurrentPlayerName() {
+        if (currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
+            return players.get(currentPlayerIndex).Name;
+        }
+        return null;
+    }
+
+    public Card[] getCommunityCards() {
+        return communityCards;
+    }
+
+    public int getCommunityCardCount() {
+        return communityCardsCount;
+    }
+
+    public List<Player> getPlayers() {
+        return players;
+    }
+
+
 
 }
