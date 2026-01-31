@@ -7,7 +7,7 @@ public class Deck {
     public Deck() {
         cards = new ArrayList<>();
         for (int suit = 0; suit < 4; suit++) {
-            for (int value = 1; value <= 13; value++) {
+            for (int value = 2; value <= 14; value++) {
                 Card card = new Card();
                 card.SetSuit(suit);
                 card.SetValue(value);
@@ -23,8 +23,7 @@ public class Deck {
     public Card dealCard() {
         if (cards.isEmpty()) {
             return null;
-
         }
-        return cards.remove(0); // Removes and returns first card
+        return cards.remove(0);
     }
 }

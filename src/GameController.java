@@ -16,6 +16,8 @@ public class GameController {
     @FXML private TextArea playersListArea;
     @FXML private Button foldButton, checkButton, callButton, raiseButton;
     @FXML private TextField raiseAmountField;
+    @FXML private javafx.scene.layout.VBox winnerBanner;
+    @FXML private Label winnerLabel, winnerNameLabel;
 
     private Socket socket;
     private BufferedReader in;
@@ -69,6 +71,16 @@ public class GameController {
             switch (messageType) {
                 case "DEAL":
                     System.out.println("Processing DEAL message"); // DEBUG
+                    // New hand starting — clear the chip map so it rebuilds fresh
+                    playerChipsMap.clear();
+                    // Hide winner banner for new hand
+                    winnerBanner.setVisible(false);
+                    // Also clear community cards from previous hand
+                    communityCard1.setImage(null);
+                    communityCard2.setImage(null);
+                    communityCard3.setImage(null);
+                    communityCard4.setImage(null);
+                    communityCard5.setImage(null);
                     // DEAL|Suit|Value|Suit|Value
                     if (parts.length >= 5) {
                         System.out.println("Card 1: " + parts[1] + " " + parts[2]); // DEBUG
@@ -96,6 +108,7 @@ public class GameController {
                     currentBetLabel.setText("Current Bet: $" + parts[1]);
                     callButton.setText("Call $" + parts[1]);
                     break;
+
 
                 case "TURN":
                     turnLabel.setText("Turn: " + parts[1]);
@@ -127,10 +140,36 @@ public class GameController {
                 case "ACTION":
                     // ACTION|PlayerName|Action
                     System.out.println(parts[1] + " did " + parts[2]);
+                    if (parts[1].equals(username)) {
+                        disableAllButtons();
+                    }
+                    break;
+
+                case "WINNER":
+                    // parts[1] = winner's name
+                    turnLabel.setText("Winner: " + parts[1]);
+                    // Show winner banner
+                    winnerNameLabel.setText(parts[1] + " WINS!");
+                    winnerLabel.setText("🎉 HAND WINNER 🎉");
+                    winnerBanner.setVisible(true);
+                    disableAllButtons();
+                    break;
+
+                case "GAME_OVER":
+                    // Tournament is over — one player has all the chips
+                    turnLabel.setText("Game Over! Winner: " + parts[1]);
+                    phaseLabel.setText("Tournament Complete");
+                    // Show game over banner
+                    winnerNameLabel.setText(parts[1] + " WINS THE GAME!");
+                    winnerLabel.setText("🏆 CHAMPION 🏆");
+                    winnerBanner.setVisible(true);
+                    disableAllButtons();
                     break;
 
                 case "ERROR":
                     // ERROR|Message
+                    // Lock the UI so the player can't spam actions while waiting for TURN update
+                    disableAllButtons();
                     showError(parts[1]);
                     break;
             }
@@ -147,7 +186,6 @@ public class GameController {
         // Convert value to card name
         String valueName;
         switch (value) {
-            case 1:
             case 14: valueName = "Ace"; break;
             case 2: valueName = "Two"; break;
             case 3: valueName = "Three"; break;
@@ -200,13 +238,18 @@ public class GameController {
         }
     }
 
-    private void updatePlayersList(String name, String chips) {
-        String entry = name + ": $" + chips + "\n";
-        String currentText = playersListArea.getText();
+    // Tracks current chip count for each player to rebuild the list on every update
+    private final java.util.LinkedHashMap<String, String> playerChipsMap = new java.util.LinkedHashMap<>();
 
-        if (!currentText.contains(name + ":")) {
-            playersListArea.appendText(entry);
+    private void updatePlayersList(String name, String chips) {
+        playerChipsMap.put(name, chips);
+
+        // Rebuild the entire text area so counts stay current
+        StringBuilder sb = new StringBuilder();
+        for (java.util.Map.Entry<String, String> entry : playerChipsMap.entrySet()) {
+            sb.append(entry.getKey()).append(": $").append(entry.getValue()).append("\n");
         }
+        playersListArea.setText(sb.toString());
     }
 
     private void showError(String errorMessage) {
@@ -220,20 +263,23 @@ public class GameController {
     // Button handlers
     @FXML
     private void handleFold() {
-        out.println("FOLD|" + username);
+        // Prevent double-click / spamming
         disableAllButtons();
+        out.println("FOLD|" + username);
     }
 
     @FXML
     private void handleCheck() {
-        out.println("CHECK|" + username);
+        // Prevent double-click / spamming
         disableAllButtons();
+        out.println("CHECK|" + username);
     }
 
     @FXML
     private void handleCall() {
-        out.println("CALL|" + username);
+        // Prevent double-click / spamming
         disableAllButtons();
+        out.println("CALL|" + username);
     }
 
     @FXML
@@ -241,14 +287,17 @@ public class GameController {
         try {
             int amount = Integer.parseInt(raiseAmountField.getText());
             if (amount > 0) {
+                // Prevent double-click / spamming
+                disableAllButtons();
                 out.println("RAISE|" + username + "|" + amount);
                 raiseAmountField.clear();
-                disableAllButtons();
             }
         } catch (NumberFormatException e) {
             showError("Please enter a valid raise amount");
         }
     }
+
+
     public void initializeWithExistingConnection(Socket socket, BufferedReader in, PrintWriter out, String username) {
         System.out.println("GameController.initializeWithExistingConnection() called"); // DEBUG
         this.socket = socket;

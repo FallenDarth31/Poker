@@ -85,7 +85,7 @@ public class HandEvaluator {
 
         // Find four of a kind
         int quadValue = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (counts[i] == 4) {
                 quadValue = i;
                 break;
@@ -96,7 +96,7 @@ public class HandEvaluator {
 
         // Find highest kicker
         int kicker = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (i != quadValue && counts[i] > 0) {
                 kicker = i;
                 break;
@@ -113,7 +113,7 @@ public class HandEvaluator {
 
         // Find three of a kind
         int tripleValue = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (counts[i] >= 3) {
                 tripleValue = i;
                 break;
@@ -124,7 +124,7 @@ public class HandEvaluator {
 
         // Find a pair (different from triple)
         int pairValue = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (i != tripleValue && counts[i] >= 2) {
                 pairValue = i;
                 break;
@@ -205,7 +205,7 @@ public class HandEvaluator {
 
         // Find three of a kind
         int tripleValue = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (counts[i] == 3) {
                 tripleValue = i;
                 break;
@@ -216,7 +216,7 @@ public class HandEvaluator {
 
         // Get two highest kickers
         List<Integer> kickers = new ArrayList<>();
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (i != tripleValue && counts[i] > 0) {
                 for (int j = 0; j < counts[i]; j++) {
                     kickers.add(i);
@@ -236,7 +236,7 @@ public class HandEvaluator {
 
         // Find two pairs (highest to lowest)
         List<Integer> pairs = new ArrayList<>();
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (counts[i] >= 2) {
                 pairs.add(i);
             }
@@ -250,7 +250,7 @@ public class HandEvaluator {
 
         // Find highest kicker
         int kicker = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (i != pair1 && i != pair2 && counts[i] > 0) {
                 kicker = i;
                 break;
@@ -267,7 +267,7 @@ public class HandEvaluator {
 
         // Find the highest pair
         int pairValue = -1;
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (counts[i] == 2) {
                 pairValue = i;
                 break;
@@ -278,7 +278,7 @@ public class HandEvaluator {
 
         // Get kickers (remaining high cards)
         List<Integer> kickers = new ArrayList<>();
-        for (int i = 13; i >= 1; i--) {
+        for (int i = 14; i >= 2; i--) {
             if (i != pairValue && counts[i] > 0) {
                 for (int j = 0; j < counts[i]; j++) {
                     kickers.add(i);
@@ -320,7 +320,7 @@ public class HandEvaluator {
     //Helper methods
 
     private static int[] getValueCounts(Card[] cards) {
-        int[] counts = new int[14];
+        int[] counts = new int[15]; // Was 14, should be 15
         for (Card card : cards) {
             counts[card.getValue()]++;
         }

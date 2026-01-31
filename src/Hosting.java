@@ -78,8 +78,8 @@ public class Hosting {
                         firstMessage = false;
                     }
                     else {
-                    // Handle game actions
-                    handleGameAction(message);
+                        // Handle game actions
+                        handleGameAction(message);
                     }
                 }
 
@@ -152,6 +152,35 @@ public class Hosting {
         for (Player player : gameState.getPlayers()) {
             broadcastMessage("PLAYER_CHIPS|" + player.Name + "|" + player.chips);
         }
+
+        if (gameState.getCurrentPhase() == GameState.GamePhase.SHOWDOWN) {
+            String winner = gameState.getLastWinnerName();
+            if (winner != null) {
+                broadcastMessage("WINNER|" + winner);
+
+                // Auto-restart: wait 3 seconds then deal next hand
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+
+                    // If only one player has chips, the tournament is over
+                    long playersWithChips = gameState.getPlayers().stream()
+                            .filter(p -> p.chips > 0).count();
+                    if (playersWithChips < 2) {
+                        broadcastMessage("GAME_OVER|" + winner);
+                        return;
+                    }
+
+                    gameState.startNewHand();
+                    dealCardsToPlayers();
+                    broadcastGameState();
+                }).start();
+            }
+        }
     }
 
     // Handle game action messages from clients
@@ -163,6 +192,19 @@ public class Hosting {
 
         String action = parts[0];
         String playerName = parts[1];
+
+        // Reject actions during SHOWDOWN
+        if (gameState.getCurrentPhase() == GameState.GamePhase.SHOWDOWN) {
+            sendToPlayer(playerName, "ERROR|Hand is over, waiting for next hand");
+            return;
+        }
+
+        // Enforce turn order — only the current player may act
+        String currentPlayer = gameState.getCurrentPlayerName();
+        if (!playerName.equals(currentPlayer)) {
+            sendToPlayer(playerName, "ERROR|It is not your turn");
+            return;
+        }
 
         switch (action) {
             case "FOLD":
@@ -177,7 +219,9 @@ public class Hosting {
                     broadcastMessage("ACTION|" + playerName + "|CHECK");
                     broadcastGameState();
                 } else {
-                    sendToPlayer(playerName, "ERROR|Cannot check");
+                    sendToPlayer(playerName, "ERROR|Cannot check - you must call $" + gameState.getCurrentBet());
+                    // Re-send turn info so buttons get re-enabled
+                    sendToPlayer(playerName, "TURN|" + gameState.getCurrentPlayerName());
                 }
                 break;
 

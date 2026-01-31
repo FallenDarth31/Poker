@@ -10,6 +10,16 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="GameController">
 
+    <!-- Winner Banner (top center) -->
+    <VBox fx:id="winnerBanner" layoutX="250" layoutY="20" alignment="CENTER" prefWidth="500"
+          style="-fx-background-color: #FFD700; -fx-padding: 20px; -fx-border-color: #FF8C00; -fx-border-width: 3px; -fx-background-radius: 10px; -fx-border-radius: 10px"
+          visible="false">
+        <Label fx:id="winnerLabel" text="WINNER!"
+               style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #8B0000"/>
+        <Label fx:id="winnerNameLabel" text="Player Name"
+               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #000000"/>
+    </VBox>
+
     <!-- Community Cards Area (top center) -->
     <HBox layoutX="300" layoutY="150" spacing="10" alignment="CENTER">
         <ImageView fx:id="communityCard1" fitHeight="100" fitWidth="70" preserveRatio="true"/>
