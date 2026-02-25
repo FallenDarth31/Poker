@@ -11,6 +11,8 @@ import java.awt.*;
 import java.io.*;
 import java.net.*;
 
+// Controller for ClientWindow.fxml
+// Allows the user to scan for servers, select one, enter a username, and connect
 public class ClientController {
 
     public javafx.scene.control.TextField IPIn;
@@ -24,18 +26,16 @@ public class ClientController {
     private PrintWriter currentOut;
     private BufferedReader currentIn;
 
+    String IP = "192.168.0"; // Default subnet to scan
 
-    String IP = "192.168.0";
-
+    // Runs on startup — detects the device's local IP and sets the default scan subnet
     @FXML
     public void initialize() {
         try {
             InetAddress myIP = InetAddress.getLocalHost();
             System.out.println(myIP.getHostAddress());
             IP = First3NumbersOfIP(myIP.getHostAddress());
-
             DeviceIPArea.setText("Device IP: " + myIP.getHostAddress());
-
         } catch (UnknownHostException e) {
             DeviceIPArea.setText("Device IP: Unknown");
         }
@@ -43,18 +43,21 @@ public class ClientController {
 
     Client client = new Client();
 
+    // Updates the subnet to scan based on what the user typed in the IP text field
     @FXML
     public void getIP(){
         IP = IPIn.getText();
         System.out.println(IP);
     }
 
+    // Runs the network scan on a background thread to avoid freezing the UI,
+    // then populates the server dropdown with any servers found
     @FXML
     public void TestConnection() {
         new Thread(() -> {
             client.start(IP);
 
-            // Update ComboBox on JavaFX thread after scan is done
+            // Update the ComboBox on the JavaFX thread once the scan is complete
             javafx.application.Platform.runLater(() -> {
                 ObservableList<String> servers = FXCollections.observableArrayList(client.Servers);
                 serverList.setItems(servers);
@@ -62,6 +65,8 @@ public class ClientController {
         }).start();
     }
 
+    // Extracts the first three octets from an IP address string
+    // e.g. "192.168.0.105" returns "192.168.0"
     public static String First3NumbersOfIP(String ip) {
         if (ip == null) return null;
         int from = 0;
@@ -76,7 +81,7 @@ public class ClientController {
         return ip.substring(0, dotIndex);
     }
 
-
+    // Connects to the selected server, sends the username, then opens the lobby window
     @FXML
     public void Connect() throws IOException {
         String ServerIP = serverList.getValue().toString();
@@ -87,7 +92,6 @@ public class ClientController {
                 try {
                     currentSocket = new Socket();
                     SocketAddress address = new InetSocketAddress(ServerIP, 9000);
-
                     currentSocket.connect(address, 100);
 
                     System.out.println("Connected to " + ServerIP);
@@ -95,11 +99,13 @@ public class ClientController {
                     currentOut = new PrintWriter(currentSocket.getOutputStream(), true);
                     currentIn = new BufferedReader(new InputStreamReader(currentSocket.getInputStream()));
 
+                    // The first message sent is the username so the server can register the player
                     currentOut.println(Username);
 
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("LobbyWindow.fxml"));
                     Parent root = loader.load();
 
+                    // Open the lobby in the same screen position as the current window
                     Stage currentStage = (Stage) UsernameIN.getScene().getWindow();
                     double x = currentStage.getX();
                     double y = currentStage.getY();
@@ -121,7 +127,6 @@ public class ClientController {
                     Lobby.requestFocus();
 
                     Lobby.show();
-
                     currentStage.close();
 
                 } catch (Exception e) {
@@ -130,10 +135,8 @@ public class ClientController {
             } else {
                 UsernameIN.setPromptText("**Enter a username**");
             }
-
         } else {
-            // Handle no server selected
+            // No server selected — could show an alert here
         }
     }
-
 }

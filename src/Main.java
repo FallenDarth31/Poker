@@ -10,7 +10,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+// Entry point for the application — loads the main menu window on startup
 public class Main extends Application {
+
+    // Called by the JavaFX runtime to set up and display the main window
     @Override
     public void start(Stage primaryStage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("MainWindow.fxml"));
@@ -21,10 +24,12 @@ public class Main extends Application {
         primaryStage.show();
     }
 
+    // JVM entry point — launches the JavaFX application
     public static void main(String[] args) throws UnknownHostException {
-
         launch(args);
     }
-     public static void Hosting() throws IOException {
-     }
+
+    // Placeholder method — hosting logic is handled by HostingController and Hosting
+    public static void Hosting() throws IOException {
+    }
 }

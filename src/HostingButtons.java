@@ -6,8 +6,10 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+// Controller for the main menu window — handles the Host and Join buttons
 public class HostingButtons {
 
+    // Opens the hosting setup window when the user clicks "Host Game"
     @FXML
     private void handleHostGame() throws IOException {
         Stage primaryStage = new Stage();
@@ -18,9 +20,9 @@ public class HostingButtons {
         primaryStage.show();
         primaryStage.setMinWidth(1000);
         primaryStage.setMinHeight(700);
-
     }
 
+    // Opens the client join window when the user clicks "Join Game"
     @FXML
     private void handleJoinGame() throws IOException {
         Stage primaryStage = new Stage();

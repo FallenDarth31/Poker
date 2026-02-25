@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+// Controller for LobbyWindow.fxml
+// Displays a waiting screen after the player connects, and listens for the host to start the game
 public class LobbyController {
 
     private Socket socket;
@@ -18,8 +20,9 @@ public class LobbyController {
     private PrintWriter out;
     private String username;
     private Stage stage;
-    private volatile boolean keepListening = true; // Add this flag
+    private volatile boolean keepListening = true; // Used to stop the listener thread when the game starts
 
+    // Receives the socket and player details from ClientController and begins listening for messages
     public void PassVariables(Socket socket, String username, Stage stage) throws IOException {
         this.socket = socket;
         this.username = username;
@@ -28,6 +31,8 @@ public class LobbyController {
         initialise();
     }
 
+    // Sets up I/O streams and starts a background thread that waits for the "StartingGame" signal
+    // When received, transitions to the game screen using the existing socket connection
     @FXML
     public void initialise() throws IOException {
 
@@ -41,48 +46,46 @@ public class LobbyController {
 
         new Thread(() -> {
             String message;
-            while (keepListening) { // Changed from while(true)
+            while (keepListening) {
                 try {
                     if ((message = in.readLine()) == null) break;
                 } catch (IOException e) {
-                    if (keepListening) { // Only throw if we're still supposed to be listening
+                    if (keepListening) {
                         throw new RuntimeException(e);
                     }
                     break;
                 }
 
-                System.out.println("LobbyController received: " + message); // DEBUG
+                System.out.println("LobbyController received: " + message);
 
                 if (message.equals("StartingGame")) {
                     System.out.println("Starting Game!!!");
 
-                    // Stop this listener
-                    keepListening = false;
+                    keepListening = false; // Stop this listener — GameController will take over
 
-                    // Transition to game window
                     Platform.runLater(() -> {
                         try {
                             FXMLLoader loader = new FXMLLoader(getClass().getResource("GameWindow.fxml"));
                             Parent root = loader.load();
 
                             GameController gameController = loader.getController();
-                            // Pass the existing socket, in, out, and username
+                            // Pass the existing connection so we don't need to reconnect
                             gameController.initializeWithExistingConnection(socket, in, out, username);
 
-                            // Use the stored stage reference
-                            stage.setScene(new Scene(root, 1000, 700));
+                            stage.setScene(new Scene(root, 1000, 800));
 
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     });
 
-                    break; // Exit the loop
+                    break;
                 }
             }
         }).start();
     }
 
+    // Stops the background listener thread gracefully when the lobby is closed
     public void cleanup() {
         keepListening = false;
     }

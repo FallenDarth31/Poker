@@ -4,21 +4,21 @@ import java.util.*;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
 
-
+// Manages the game server — accepts client connections, handles incoming game actions,
+// and broadcasts game state updates to all connected players
 public class Hosting {
     public List<String> Players = Collections.synchronizedList(new ArrayList<>());
     public List<String> Usernames = Collections.synchronizedList(new ArrayList<>());
-    public List<PrintWriter> Writers = Collections.synchronizedList(new ArrayList<>());
+    public List<PrintWriter> Writers = Collections.synchronizedList(new ArrayList<>()); // One writer per connected client
 
     private GameState gameState;
-
 
     public void setPlayersList(List<String> players) {
         this.Players = players;
     }
 
+    // Sends a message to every connected client
     public void broadcastMessage(String message) {
-
         try {
             synchronized (Writers) {
                 for (PrintWriter writer : Writers) {
@@ -28,10 +28,11 @@ public class Hosting {
             System.out.println("Broadcasted: " + message);
         } catch (Exception e) {
             System.out.println("Error in broadcast");
-
         }
     }
 
+    // Starts the TCP server on port 9000 in a background thread
+    // Accepts new client connections continuously and spawns a handler thread for each one
     public void Start() throws IOException {
         new Thread(() -> {
             try (ServerSocket serverSocket = new ServerSocket(9000)) {
@@ -44,8 +45,6 @@ public class Hosting {
                     ClientHandler clientHandler = new ClientHandler(clientSocket);
                     new Thread(clientHandler).start();
                     Players.add(clientSocket.getInetAddress().getHostAddress());
-
-
                 }
 
             } catch (IOException e) {
@@ -54,6 +53,8 @@ public class Hosting {
         }).start();
     }
 
+    // Handles communication with a single connected client on its own thread
+    // The first message received is the player's username; all others are game actions
     class ClientHandler implements Runnable {
         Boolean firstMessage = true;
         private final Socket clientSocket;
@@ -65,7 +66,6 @@ public class Hosting {
 
         @Override
         public void run() {
-
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
                 Writers.add(out);
@@ -74,11 +74,10 @@ public class Hosting {
                 while ((message = in.readLine()) != null) {
                     System.out.println("Client says: " + message);
                     if (firstMessage == true) {
-                        Usernames.add(message);
+                        Usernames.add(message); // Register the username on first contact
                         firstMessage = false;
                     }
                     else {
-                        // Handle game actions
                         handleGameAction(message);
                     }
                 }
@@ -86,7 +85,7 @@ public class Hosting {
             } catch (IOException e) {
                 System.err.println("Client error: " + e.getMessage());
             } finally {
-                // Remove writer when client disconnects
+                // Remove the writer when the client disconnects so they no longer receive broadcasts
                 if (out != null) {
                     Writers.remove(out);
                 }
@@ -98,10 +97,12 @@ public class Hosting {
             }
         }
     }
+
     public void setGameState(GameState gs) {
         this.gameState = gs;
     }
 
+    // Sends a message to a specific player by looking up their index in the Usernames list
     public void sendToPlayer(String playerName, String message) {
         synchronized (Usernames) {
             int index = Usernames.indexOf(playerName);
@@ -112,7 +113,7 @@ public class Hosting {
         }
     }
 
-    // Deal private cards to all players
+    // Sends each player their own private hole cards individually (other players cannot see these)
     public void dealCardsToPlayers() {
         for (String username : Usernames) {
             Player player = gameState.getPlayerByName(username);
@@ -129,7 +130,9 @@ public class Hosting {
         }
     }
 
-    // Broadcast current game state to all players
+    // Broadcasts the current game state to all players — pot, bet, turn, phase,
+    // community cards, and chip counts
+    // If the hand is over, announces the winner and schedules the next hand after 3 seconds
     public void broadcastGameState() {
         if (gameState == null) return;
 
@@ -138,7 +141,6 @@ public class Hosting {
         broadcastMessage("TURN|" + gameState.getCurrentPlayerName());
         broadcastMessage("PHASE|" + gameState.getCurrentPhase());
 
-        // Send community cards if any are revealed
         if (gameState.getCommunityCardCount() > 0) {
             StringBuilder cards = new StringBuilder("COMMUNITY");
             for (int i = 0; i < gameState.getCommunityCardCount(); i++) {
@@ -148,7 +150,6 @@ public class Hosting {
             broadcastMessage(cards.toString());
         }
 
-        // Broadcast all player chip counts
         for (Player player : gameState.getPlayers()) {
             broadcastMessage("PLAYER_CHIPS|" + player.Name + "|" + player.chips);
         }
@@ -158,7 +159,7 @@ public class Hosting {
             if (winner != null) {
                 broadcastMessage("WINNER|" + winner);
 
-                // Auto-restart: wait 3 seconds then deal next hand
+                // Wait 3 seconds then start the next hand automatically
                 new Thread(() -> {
                     try {
                         Thread.sleep(3000);
@@ -167,7 +168,7 @@ public class Hosting {
                         return;
                     }
 
-                    // If only one player has chips, the tournament is over
+                    // End the tournament if fewer than 2 players still have chips
                     long playersWithChips = gameState.getPlayers().stream()
                             .filter(p -> p.chips > 0).count();
                     if (playersWithChips < 2) {
@@ -183,7 +184,8 @@ public class Hosting {
         }
     }
 
-    // Handle game action messages from clients
+    // Processes a game action message from a client (FOLD, CHECK, CALL, or RAISE)
+    // Enforces turn order and rejects actions during SHOWDOWN
     private void handleGameAction(String message) {
         if (gameState == null) return;
 
@@ -193,13 +195,13 @@ public class Hosting {
         String action = parts[0];
         String playerName = parts[1];
 
-        // Reject actions during SHOWDOWN
+        // Reject actions sent while the hand is over
         if (gameState.getCurrentPhase() == GameState.GamePhase.SHOWDOWN) {
             sendToPlayer(playerName, "ERROR|Hand is over, waiting for next hand");
             return;
         }
 
-        // Enforce turn order — only the current player may act
+        // Only the current player is allowed to act
         String currentPlayer = gameState.getCurrentPlayerName();
         if (!playerName.equals(currentPlayer)) {
             sendToPlayer(playerName, "ERROR|It is not your turn");
@@ -220,8 +222,7 @@ public class Hosting {
                     broadcastGameState();
                 } else {
                     sendToPlayer(playerName, "ERROR|Cannot check - you must call $" + gameState.getCurrentBet());
-                    // Re-send turn info so buttons get re-enabled
-                    sendToPlayer(playerName, "TURN|" + gameState.getCurrentPlayerName());
+                    sendToPlayer(playerName, "TURN|" + gameState.getCurrentPlayerName()); // Re-enable buttons
                 }
                 break;
 
@@ -232,6 +233,7 @@ public class Hosting {
                     broadcastGameState();
                 } else {
                     sendToPlayer(playerName, "ERROR|Cannot call");
+                    sendToPlayer(playerName, "TURN|" + gameState.getCurrentPlayerName());
                 }
                 break;
 
@@ -244,10 +246,9 @@ public class Hosting {
                     broadcastGameState();
                 } else {
                     sendToPlayer(playerName, "ERROR|Cannot raise");
+                    sendToPlayer(playerName, "TURN|" + gameState.getCurrentPlayerName());
                 }
                 break;
         }
     }
-
-
 }

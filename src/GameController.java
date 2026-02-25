@@ -7,6 +7,8 @@ import javafx.scene.image.ImageView;
 import java.io.*;
 import java.net.Socket;
 
+// Controller for GameWindow.fxml
+// Handles all in-game UI updates received from the server, and sends player actions back
 public class GameController {
 
     @FXML private ImageView communityCard1, communityCard2, communityCard3, communityCard4, communityCard5;
@@ -24,6 +26,7 @@ public class GameController {
     private PrintWriter out;
     private String username;
 
+    // Initialises the controller by creating new I/O streams from the socket
     public void initialize(Socket socket, String username) throws IOException {
         System.out.println("GameController.initialize() called"); // DEBUG
         this.socket = socket;
@@ -33,13 +36,11 @@ public class GameController {
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
 
-        // Disable buttons initially
         disableAllButtons();
-
-        // Start listening for server messages
         startMessageListener();
     }
 
+    // Disables all action buttons — called at startup and after the player submits an action
     private void disableAllButtons() {
         foldButton.setDisable(true);
         checkButton.setDisable(true);
@@ -47,6 +48,7 @@ public class GameController {
         raiseButton.setDisable(true);
     }
 
+    // Starts a background thread that continuously reads messages from the server
     private void startMessageListener() {
         new Thread(() -> {
             String message;
@@ -61,6 +63,8 @@ public class GameController {
         }).start();
     }
 
+    // Parses each pipe-delimited message from the server and updates the UI accordingly
+    // All UI updates run on the JavaFX Application Thread via Platform.runLater()
     private void handleServerMessage(String message) {
         System.out.println("handleServerMessage called with: " + message); // DEBUG
         String[] parts = message.split("\\|");
@@ -71,11 +75,9 @@ public class GameController {
             switch (messageType) {
                 case "DEAL":
                     System.out.println("Processing DEAL message"); // DEBUG
-                    // New hand starting — clear the chip map so it rebuilds fresh
-                    playerChipsMap.clear();
-                    // Hide winner banner for new hand
+                    playerChipsMap.clear(); // Reset chip map for the new hand
                     winnerBanner.setVisible(false);
-                    // Also clear community cards from previous hand
+                    // Clear community cards from the previous hand
                     communityCard1.setImage(null);
                     communityCard2.setImage(null);
                     communityCard3.setImage(null);
@@ -109,10 +111,9 @@ public class GameController {
                     callButton.setText("Call $" + parts[1]);
                     break;
 
-
                 case "TURN":
                     turnLabel.setText("Turn: " + parts[1]);
-                    // Enable/disable buttons based on if it's your turn
+                    // Enable buttons only if it is this player's turn
                     boolean isMyTurn = parts[1].equals(username);
                     foldButton.setDisable(!isMyTurn);
                     checkButton.setDisable(!isMyTurn);
@@ -141,14 +142,12 @@ public class GameController {
                     // ACTION|PlayerName|Action
                     System.out.println(parts[1] + " did " + parts[2]);
                     if (parts[1].equals(username)) {
-                        disableAllButtons();
+                        disableAllButtons(); // This player has acted — lock the buttons
                     }
                     break;
 
                 case "WINNER":
-                    // parts[1] = winner's name
                     turnLabel.setText("Winner: " + parts[1]);
-                    // Show winner banner
                     winnerNameLabel.setText(parts[1] + " WINS!");
                     winnerLabel.setText("🎉 HAND WINNER 🎉");
                     winnerBanner.setVisible(true);
@@ -159,7 +158,6 @@ public class GameController {
                     // Tournament is over — one player has all the chips
                     turnLabel.setText("Game Over! Winner: " + parts[1]);
                     phaseLabel.setText("Tournament Complete");
-                    // Show game over banner
                     winnerNameLabel.setText(parts[1] + " WINS THE GAME!");
                     winnerLabel.setText("🏆 CHAMPION 🏆");
                     winnerBanner.setVisible(true);
@@ -167,8 +165,7 @@ public class GameController {
                     break;
 
                 case "ERROR":
-                    // ERROR|Message
-                    // Lock the UI so the player can't spam actions while waiting for TURN update
+                    // ERROR|Message — lock UI and show the error to the player
                     disableAllButtons();
                     showError(parts[1]);
                     break;
@@ -176,14 +173,15 @@ public class GameController {
         });
     }
 
-    // Helper method to load card image
+    // Loads the card image for a given suit and value from the resources folder
+    // Maps numeric values (e.g. 12) to their name (e.g. "Queen") to build the filename
     private Image getCardImage(String suit, int value) {
         System.out.println("getCardImage called with suit=" + suit + " value=" + value); // DEBUG
 
-        // Convert suit enum to proper case (e.g., "SPADES" -> "Spades")
+        // Normalise the suit string to title case e.g. "SPADES" -> "Spades"
         String suitName = suit.substring(0, 1).toUpperCase() + suit.substring(1).toLowerCase();
 
-        // Convert value to card name
+        // Map the integer value to the name used in the image filename
         String valueName;
         switch (value) {
             case 14: valueName = "Ace"; break;
@@ -202,7 +200,7 @@ public class GameController {
             default: valueName = "Unknown"; break;
         }
 
-        // Match your actual file names: "Queen of Spades.png"
+        // File naming convention: "Queen of Spades.png"
         String imagePath = "/resources/cards/" + valueName + " of " + suitName + ".png";
 
         System.out.println("Trying to load: " + imagePath); // DEBUG
@@ -218,15 +216,14 @@ public class GameController {
         }
     }
 
+    // Clears all community card slots then sets images for each card in the COMMUNITY message
     private void updateCommunityCards(String[] parts) {
         ImageView[] cards = {communityCard1, communityCard2, communityCard3, communityCard4, communityCard5};
 
-        // Clear all cards first
         for (ImageView card : cards) {
             card.setImage(null);
         }
 
-        // Set visible cards
         for (int i = 1; i < parts.length && i <= 5; i++) {
             String[] cardData = parts[i].split(",");
             String suit = cardData[0];
@@ -238,13 +235,13 @@ public class GameController {
         }
     }
 
-    // Tracks current chip count for each player to rebuild the list on every update
+    // Stores the latest chip count for each player; used to rebuild the players list display
     private final java.util.LinkedHashMap<String, String> playerChipsMap = new java.util.LinkedHashMap<>();
 
+    // Updates the stored chip count for a player and rebuilds the players list text area
     private void updatePlayersList(String name, String chips) {
         playerChipsMap.put(name, chips);
 
-        // Rebuild the entire text area so counts stay current
         StringBuilder sb = new StringBuilder();
         for (java.util.Map.Entry<String, String> entry : playerChipsMap.entrySet()) {
             sb.append(entry.getKey()).append(": $").append(entry.getValue()).append("\n");
@@ -252,6 +249,7 @@ public class GameController {
         playersListArea.setText(sb.toString());
     }
 
+    // Shows an error alert dialog with the given message
     private void showError(String errorMessage) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -260,34 +258,32 @@ public class GameController {
         alert.showAndWait();
     }
 
-    // Button handlers
+    // Button handlers — each disables all buttons immediately to prevent double-clicking
+
     @FXML
     private void handleFold() {
-        // Prevent double-click / spamming
         disableAllButtons();
         out.println("FOLD|" + username);
     }
 
     @FXML
     private void handleCheck() {
-        // Prevent double-click / spamming
         disableAllButtons();
         out.println("CHECK|" + username);
     }
 
     @FXML
     private void handleCall() {
-        // Prevent double-click / spamming
         disableAllButtons();
         out.println("CALL|" + username);
     }
 
+    // Reads the raise amount from the text field; shows an error if it is not a valid number
     @FXML
     private void handleRaise() {
         try {
             int amount = Integer.parseInt(raiseAmountField.getText());
             if (amount > 0) {
-                // Prevent double-click / spamming
                 disableAllButtons();
                 out.println("RAISE|" + username + "|" + amount);
                 raiseAmountField.clear();
@@ -297,7 +293,8 @@ public class GameController {
         }
     }
 
-
+    // Alternative initialisation used when transitioning from the lobby
+    // Reuses the existing socket streams rather than creating new ones
     public void initializeWithExistingConnection(Socket socket, BufferedReader in, PrintWriter out, String username) {
         System.out.println("GameController.initializeWithExistingConnection() called"); // DEBUG
         this.socket = socket;
@@ -306,10 +303,7 @@ public class GameController {
         this.username = username;
         this.playerNameLabel.setText(username);
 
-        // Disable buttons initially
         disableAllButtons();
-
-        // Start listening for server messages
         startMessageListener();
     }
 }

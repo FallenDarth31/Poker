@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 
+// Manages the complete state of an active poker game including players, the deck,
+// community cards, the pot, whose turn it is, and the current game phase
 public class GameState {
     private List<String> playerNames;
     private int startingChips;
@@ -11,14 +13,15 @@ public class GameState {
     private int communityCardsCount;
 
     private int pot;
-    private int currentBet;
+    private int currentBet; // The highest bet placed this round; players must match it to stay in
 
     private GamePhase gamePhase;
-    private int currentPlayerIndex;
-    private int dealerButtonIndex;
+    private int currentPlayerIndex;   // Index of the player whose turn it currently is
+    private int dealerButtonIndex;    // Index of the current dealer; rotates each hand
 
-    private boolean[] hasActedThisRound; // NEW: Track who has acted
+    private boolean[] hasActedThisRound; // Tracks which players have acted in the current betting round
 
+    // The phases a poker hand moves through in order
     enum GamePhase {
         WAITING,
         PRE_FLOP,
@@ -30,6 +33,7 @@ public class GameState {
 
     private List<Player> players;
 
+    // Initialises the game with the given player names, starting chip count and big blind amount
     public GameState(List<String> playerNames, int startingChips, int bigBlind) {
         this.playerNames = new ArrayList<>(playerNames);
         this.startingChips = startingChips;
@@ -52,12 +56,11 @@ public class GameState {
         this.dealerButtonIndex = 0;
     }
 
-    //Prepares for a new hand
+    // Prepares for a new hand — removes eliminated players, resets the deck and all hand state,
+    // deals two hole cards to each player, and posts the small and big blinds
     public void startNewHand() {
-        // Remove players with 0 chips before dealing
         removeEliminatedPlayers();
 
-        // Clear winner from previous hand
         lastWinnerName = null;
 
         deck = new Deck();
@@ -69,17 +72,20 @@ public class GameState {
         pot = 0;
         currentBet = bigBlind;
 
+        // Reset each player's hand state for the new round
         for (Player player : players) {
             player.hasFolded = false;
             player.isAllIn = false;
             player.currentBet = 0;
         }
 
+        // Deal two hole cards to each player
         for (Player player : players) {
             player.Hand[0] = deck.dealCard();
             player.Hand[1] = deck.dealCard();
         }
 
+        // Move the dealer button to the next player
         dealerButtonIndex = (dealerButtonIndex + 1) % players.size();
 
         int smallBlindIndex;
@@ -87,85 +93,82 @@ public class GameState {
         int smallBlindAmount = bigBlind / 2;
 
         if (players.size() == 2) {
-            // Heads-up: dealer is small blind, other player is big blind
+            // Heads-up rule: the dealer is also the small blind
             smallBlindIndex = dealerButtonIndex;
             bigBlindIndex = (dealerButtonIndex + 1) % players.size();
 
-            //Sets the smallBlindIndex (Who places the smallBlind)
             players.get(smallBlindIndex).currentBet = smallBlindAmount;
             players.get(smallBlindIndex).chips -= smallBlindAmount;
             pot += smallBlindAmount;
 
-            //Sets the bigBlindIndex (Who places the bigBlind)
             players.get(bigBlindIndex).currentBet = bigBlind;
             players.get(bigBlindIndex).chips -= bigBlind;
             pot += bigBlind;
 
-            // Dealer/small blind acts first pre-flop in heads-up
+            // In heads-up, the dealer/small blind acts first pre-flop
             currentPlayerIndex = dealerButtonIndex;
         } else {
-            // 3+ players: normal blind structure
+            // Standard structure: small blind is left of dealer, big blind is next
             smallBlindIndex = (dealerButtonIndex + 1) % players.size();
             bigBlindIndex = (dealerButtonIndex + 2) % players.size();
 
-            //Sets the smallBlindIndex (Who places the smallBlind)
             players.get(smallBlindIndex).currentBet = smallBlindAmount;
             players.get(smallBlindIndex).chips -= smallBlindAmount;
             pot += smallBlindAmount;
 
-            //Sets the bigBlindIndex (Who places the bigBlind)
             players.get(bigBlindIndex).currentBet = bigBlind;
             players.get(bigBlindIndex).chips -= bigBlind;
             pot += bigBlind;
 
-            // 3+ players: left of big blind acts first
+            // Player left of the big blind acts first pre-flop
             currentPlayerIndex = (dealerButtonIndex + 3) % players.size();
         }
 
         gamePhase = GamePhase.PRE_FLOP;
 
-        // Initialize action tracking
+        // Initialise action tracking — no players have acted yet
         hasActedThisRound = new boolean[players.size()];
     }
 
+    // Removes any players who have run out of chips before the next hand begins
     public void removeEliminatedPlayers() {
         players.removeIf(player -> player.chips <= 0);
 
+        // Prevent the dealer index going out of bounds after removal
         if (dealerButtonIndex >= players.size()) {
             dealerButtonIndex = 0;
         }
     }
 
+    // Marks the player as folded, then checks if the hand is over or advances to the next player
     public void playerFold(String playerName) {
         Player player = getPlayerByName(playerName);
 
         if (player == null) {
-            return; // Player not found
+            return;
         }
 
         if (player.hasFolded) {
-            return; // Already folded
+            return;
         }
 
         player.hasFolded = true;
 
-        // Mark as acted
+        // Mark this player as having acted
         int playerIndex = players.indexOf(player);
         if (playerIndex >= 0 && playerIndex < hasActedThisRound.length) {
             hasActedThisRound[playerIndex] = true;
         }
 
-        // Check if only 1 player remains BEFORE trying to advance
-        // (advanceToNextPlayer loops while hasFolded and would infinite-loop
-        // if called when no valid next player exists)
+        // If only one player is left, the hand ends immediately
         if (checkIfHandOver()) {
-            return; // Hand is over, no need to advance
+            return;
         }
 
-        // Hand continues — move to next active player
         advanceToNextPlayer();
     }
 
+    // Finds and returns a player by their username, or null if not found
     public Player getPlayerByName(String name) {
         for (Player player : players) {
             if (player.Name.equals(name)) {
@@ -175,6 +178,7 @@ public class GameState {
         return null;
     }
 
+    // Moves the turn to the next player who has not folded
     private void advanceToNextPlayer() {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
@@ -183,10 +187,10 @@ public class GameState {
         System.out.println("DEBUG: Advanced to player index " + currentPlayerIndex + " (" + players.get(currentPlayerIndex).Name + ")");
     }
 
-    // Stores the winner's name once a hand ends, so broadcastGameState can
-    // read it without calling the mutating determineWinner() again.
+    // Stores the winner's name once a hand ends so it can be broadcast without re-evaluating hands
     private String lastWinnerName = null;
 
+    // Checks if only one player remains; if so, awards them the pot and ends the hand
     private boolean checkIfHandOver() {
         int activePlayers = 0;
         Player lastPlayer = null;
@@ -199,16 +203,17 @@ public class GameState {
         }
 
         if (activePlayers == 1) {
-            // Award pot to last remaining player
             lastPlayer.chips += pot;
             pot = 0;
             lastWinnerName = lastPlayer.Name;
             gamePhase = GamePhase.SHOWDOWN;
-            return true; // hand is over
+            return true;
         }
-        return false; // hand continues
+        return false;
     }
 
+    // Processes a check action — only valid if the player's bet already matches the current bet
+    // If valid, advances the phase or moves to the next player depending on whether the round is complete
     public boolean playerCheck(String playerName) {
         Player player = getPlayerByName(playerName);
         if (player == null || player.hasFolded) {
@@ -221,12 +226,12 @@ public class GameState {
         System.out.println("  - gameState.currentBet = " + currentBet);
         System.out.println("  - gamePhase = " + gamePhase);
 
+        // Player can only check if they have already matched the current bet
         if (player.currentBet != currentBet) {
             System.out.println("DEBUG CHECK: FAILED - bets don't match");
             return false;
         }
 
-        // Mark as acted
         int playerIndex = players.indexOf(player);
         if (playerIndex >= 0 && playerIndex < hasActedThisRound.length) {
             hasActedThisRound[playerIndex] = true;
@@ -235,7 +240,6 @@ public class GameState {
         System.out.println("DEBUG CHECK: Before completion check");
         printActionStatus();
 
-        // Check if betting round is complete BEFORE advancing
         if (isBettingRoundComplete()) {
             System.out.println("DEBUG CHECK: Round complete, advancing phase");
             advancePhase();
@@ -247,17 +251,21 @@ public class GameState {
         return true;
     }
 
+    // Debug helper that prints each player's action status to the console
     private void printActionStatus() {
         System.out.println("  Action status:");
         for (int i = 0; i < players.size(); i++) {
             Player p = players.get(i);
             boolean acted = (i < hasActedThisRound.length) ? hasActedThisRound[i] : false;
             System.out.println("    " + p.Name + ": acted=" + acted +
-                             ", currentBet=" + p.currentBet +
-                             ", folded=" + p.hasFolded);
+                    ", currentBet=" + p.currentBet +
+                    ", folded=" + p.hasFolded +
+                    ", allIn=" + p.isAllIn);
         }
     }
 
+    // Returns true if every active player (not folded, not all-in) has acted
+    // and matched the current bet — meaning the betting round is finished
     private boolean isBettingRoundComplete() {
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
@@ -266,7 +274,6 @@ public class GameState {
                 continue;
             }
 
-            // Player must have acted AND matched the current bet
             if (i >= hasActedThisRound.length || !hasActedThisRound[i] || player.currentBet != currentBet) {
                 return false;
             }
@@ -275,10 +282,11 @@ public class GameState {
         return true;
     }
 
+    // Moves the game to the next phase and deals the appropriate community cards
+    // PRE_FLOP -> FLOP (3 cards), FLOP -> TURN (1 card), TURN -> RIVER (1 card), RIVER -> SHOWDOWN
     private void advancePhase() {
         switch (gamePhase) {
             case PRE_FLOP:
-                // Deal the flop (3 cards)
                 communityCards[0] = deck.dealCard();
                 communityCards[1] = deck.dealCard();
                 communityCards[2] = deck.dealCard();
@@ -288,28 +296,24 @@ public class GameState {
                 break;
 
             case FLOP:
-                // Deal the turn (1 card)
                 communityCards[3] = deck.dealCard();
                 communityCardsCount = 4;
                 gamePhase = GamePhase.TURN;
                 break;
 
             case TURN:
-                // Deal the river (1 card)
                 communityCards[4] = deck.dealCard();
                 communityCardsCount = 5;
                 gamePhase = GamePhase.RIVER;
                 break;
 
             case RIVER:
-                // Betting done, go to showdown
+                // All community cards are out — determine the winner
                 gamePhase = GamePhase.SHOWDOWN;
-                // Award pot and record winner (mutates state once)
                 awardPotToWinner();
                 break;
 
             case SHOWDOWN:
-                // Hand is over, start new hand
                 startNewHand();
                 break;
 
@@ -317,33 +321,31 @@ public class GameState {
                 break;
         }
 
-        // Reset betting for new round
+        // Reset betting for the new round (not needed at showdown)
         if (gamePhase != GamePhase.SHOWDOWN) {
             resetBettingRound();
         }
     }
 
+    // Resets all betting state at the start of a new round and sets the first player to act
     private void resetBettingRound() {
         System.out.println("DEBUG: resetBettingRound() called");
         currentBet = 0;
 
-        // Reset each player's current bet for this round
         for (Player player : players) {
             player.currentBet = 0;
         }
 
-        // Reset action tracking
+        // Clear action tracking so all players must act again in the new round
         hasActedThisRound = new boolean[players.size()];
 
         if (players.size() == 2) {
-            // Heads-up post-flop: small blind (dealer) acts first
-            currentPlayerIndex = dealerButtonIndex;
+            currentPlayerIndex = dealerButtonIndex; // Heads-up: dealer acts first post-flop
         } else {
-            // 3+ players: left of dealer acts first
-            currentPlayerIndex = (dealerButtonIndex + 1) % players.size();
+            currentPlayerIndex = (dealerButtonIndex + 1) % players.size(); // Left of dealer acts first
         }
 
-        // Skip folded players
+        // Skip any folded players
         while (players.get(currentPlayerIndex).hasFolded) {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
@@ -351,6 +353,8 @@ public class GameState {
         System.out.println("DEBUG: After reset, current player is " + players.get(currentPlayerIndex).Name);
     }
 
+    // Processes a call action — the player puts in enough chips to match the current bet
+    // If they cannot cover the full amount, they go all-in with their remaining chips
     public boolean playerCall(String playerName) {
         Player player = getPlayerByName(playerName);
 
@@ -358,36 +362,31 @@ public class GameState {
             return false;
         }
 
-        // Calculate how much more they need to put in
         int amountToCall = currentBet - player.currentBet;
 
         if (amountToCall <= 0) {
-            // Already matched the bet - treat as a check
+            // Player has already matched the bet, treat as a check
             return playerCheck(playerName);
         }
 
-        // Check if player has enough chips
         if (amountToCall >= player.chips) {
-            // Not enough to call - go all-in with what they have
+            // Not enough chips to fully call — go all-in
             int allInAmount = player.chips;
             pot += allInAmount;
             player.currentBet += allInAmount;
             player.chips = 0;
             player.isAllIn = true;
         } else {
-            // Normal call - player has enough chips
             player.chips -= amountToCall;
             player.currentBet = currentBet;
             pot += amountToCall;
         }
 
-        // Mark as acted
         int playerIndex = players.indexOf(player);
         if (playerIndex >= 0 && playerIndex < hasActedThisRound.length) {
             hasActedThisRound[playerIndex] = true;
         }
 
-        // Check if betting round is complete BEFORE advancing
         if (isBettingRoundComplete()) {
             advancePhase();
         } else {
@@ -397,25 +396,26 @@ public class GameState {
         return true;
     }
 
+    // Processes a raise action — the player matches the current bet then adds the raise amount on top
+    // After a raise, all other active players must act again
     public boolean playerRaise(String playerName, int raiseAmount) {
         Player player = getPlayerByName(playerName);
 
         if (player == null || player.hasFolded) {
-            return false; // Invalid
+            return false;
         }
 
-        // Calculate the total amount needed (call current bet + raise)
         int amountToCall = currentBet - player.currentBet;
         int totalAmount = amountToCall + raiseAmount;
 
+        // Raise must be at least the size of the big blind
         int minimumRaise = bigBlind;
         if (raiseAmount < minimumRaise) {
             return false;
         }
 
-        // Check if player has enough chips
         if (totalAmount > player.chips) {
-            // Not enough for full raise - go all-in instead
+            // Not enough chips — go all-in instead
             int allInAmount = player.chips;
             pot += allInAmount;
             player.currentBet += allInAmount;
@@ -426,21 +426,18 @@ public class GameState {
                 currentBet = player.currentBet;
             }
         } else {
-            // Normal raise
             player.chips -= totalAmount;
             player.currentBet += totalAmount;
             pot += totalAmount;
             currentBet = player.currentBet;
         }
 
-        // Mark as acted
         int playerIndex = players.indexOf(player);
         if (playerIndex >= 0 && playerIndex < hasActedThisRound.length) {
             hasActedThisRound[playerIndex] = true;
         }
 
-        // When someone raises, everyone else needs to act again
-        // (but skip folded / all-in players — they can't act)
+        // Reset action flags for all other active players so they must respond to the raise
         for (int i = 0; i < hasActedThisRound.length; i++) {
             if (i != playerIndex && !players.get(i).hasFolded && !players.get(i).isAllIn) {
                 hasActedThisRound[i] = false;
@@ -452,8 +449,7 @@ public class GameState {
         return true;
     }
 
-    // Called exactly once when a hand ends (either from advancePhase on RIVER,
-    // or from checkIfHandOver on fold-out). Awards pot and stores winner name.
+    // Evaluates all remaining players' hands and awards the pot to the winner
     private void awardPotToWinner() {
         RankHands bestHand = null;
         Player winner = null;
@@ -465,6 +461,7 @@ public class GameState {
 
             RankHands playerHand = HandEvaluator.evaluateHand(player.Hand, communityCards);
 
+            // compareTo() returns negative if playerHand is stronger than bestHand
             if (bestHand == null || playerHand.compareTo(bestHand) < 0) {
                 bestHand = playerHand;
                 winner = player;
@@ -478,14 +475,13 @@ public class GameState {
         }
     }
 
-    // Pure getter — safe to call multiple times, does not mutate anything.
+    // Returns the name of the winner of the last completed hand
     public String getLastWinnerName() {
         return lastWinnerName;
     }
 
-    //Getter methods
+    // Getter methods — used by Hosting to read and broadcast the game state
 
-    // Getters so Hosting can read and broadcast game state
     public int getPot() {
         return pot;
     }
@@ -498,6 +494,7 @@ public class GameState {
         return gamePhase;
     }
 
+    // Returns the name of the player whose turn it currently is
     public String getCurrentPlayerName() {
         if (currentPlayerIndex >= 0 && currentPlayerIndex < players.size()) {
             return players.get(currentPlayerIndex).Name;
