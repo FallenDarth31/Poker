@@ -33,7 +33,7 @@ public class GameState {
 
     private List<Player> players;
 
-    // Initialises the game with the given player names, starting chip count and big blind amount
+    // Initializes the game with the given player names, starting chip count and big blind amount
     public GameState(List<String> playerNames, int startingChips, int bigBlind) {
         this.playerNames = new ArrayList<>(playerNames);
         this.startingChips = startingChips;
@@ -121,7 +121,7 @@ public class GameState {
             pot += bigBlind;
 
             // Player left of the big blind acts first pre-flop
-            currentPlayerIndex = (dealerButtonIndex + 3) % players.size();
+            currentPlayerIndex = (bigBlindIndex + 1) % players.size();
         }
 
         gamePhase = GamePhase.PRE_FLOP;
@@ -182,7 +182,8 @@ public class GameState {
     private void advanceToNextPlayer() {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-        } while (players.get(currentPlayerIndex).hasFolded);
+        } while (players.get(currentPlayerIndex).hasFolded ||
+                players.get(currentPlayerIndex).isAllIn);
 
         System.out.println("DEBUG: Advanced to player index " + currentPlayerIndex + " (" + players.get(currentPlayerIndex).Name + ")");
     }
@@ -340,13 +341,13 @@ public class GameState {
         hasActedThisRound = new boolean[players.size()];
 
         if (players.size() == 2) {
-            currentPlayerIndex = dealerButtonIndex; // Heads-up: dealer acts first post-flop
+            currentPlayerIndex = dealerButtonIndex;
         } else {
-            currentPlayerIndex = (dealerButtonIndex + 1) % players.size(); // Left of dealer acts first
+            currentPlayerIndex = (dealerButtonIndex + 1) % players.size();
         }
 
-        // Skip any folded players
-        while (players.get(currentPlayerIndex).hasFolded) {
+        while (players.get(currentPlayerIndex).hasFolded ||
+                players.get(currentPlayerIndex).isAllIn) {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
 
@@ -444,7 +445,11 @@ public class GameState {
             }
         }
 
-        advanceToNextPlayer();
+        if (isBettingRoundComplete()) {
+            advancePhase();
+        } else {
+            advanceToNextPlayer();
+        }
 
         return true;
     }
@@ -459,7 +464,9 @@ public class GameState {
                 continue;
             }
 
-            RankHands playerHand = HandEvaluator.evaluateHand(player.Hand, communityCards);
+            Card[] filledCommunity = new Card[communityCardsCount];
+            System.arraycopy(communityCards, 0, filledCommunity, 0, communityCardsCount);
+            RankHands playerHand = HandEvaluator.evaluateHand(player.Hand, filledCommunity);
 
             // compareTo() returns negative if playerHand is stronger than bestHand
             if (bestHand == null || playerHand.compareTo(bestHand) < 0) {
